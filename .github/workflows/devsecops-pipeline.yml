@@ -1,1 +1,40 @@
+name: Cloud-Native DevSecOps Pipeline
 
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  secret-scanning:
+    name: Secret Auditing Gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetches full git commit history for deep structural audits
+
+      - name: Run TruffleHog Secret Scan
+        uses: trufflehog/actions@main
+        with:
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --only-verified
+
+  static-analysis:
+    name: SAST Flaw Scanning Gate
+    runs-on: ubuntu-latest
+    needs: secret-scanning # Forces this job to wait for secret scanning to pass first
+    container:
+      image: semgrep/semgrep:latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep Code Audit
+        run: semgrep scan --config auto --error
