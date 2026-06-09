@@ -1,0 +1,22 @@
+rules:
+  - id: custom-php-reflected-xss
+    languages:
+      - php
+    message: >-
+      Dangerous Data Flow: User-controlled input via superglobals ($_GET or $_POST) is entering an echo or print sink without sanitization. This introduces an explicit Reflected Cross-Site Scripting (XSS) vulnerability. Wrap variables inside htmlspecialchars() to remediate this finding.
+    severity: ERROR
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-either:
+              - pattern: $_GET[...]
+              - pattern: $_POST[...]
+              - pattern: $_REQUEST[...]
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: echo ...;
+              - pattern: print(...);
+    pattern-sanitizers:
+      - pattern: htmlspecialchars(...)
+      - pattern: htmlentities(...)
